@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -10,16 +11,35 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $tenant = Tenant::firstOrCreate(
+            ['slug' => 'eglise-centrale-ouaga'],
+            [
+                'name' => 'Église Centrale de Ouagadougou',
+                'email' => 'contact@eglise-centrale.test',
+                'phone' => '+226 00000000',
+                'address' => 'Ouagadougou',
+                'city' => 'Ouagadougou',
+                'country' => 'Burkina Faso',
+                'status' => 'active',
+            ]
+        );
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $user = User::firstOrCreate(
+            ['email' => 'admin@eglise.test'],
+            [
+                'name' => 'Administrateur',
+                'password' => bcrypt('password'),
+                'is_platform_admin' => true,
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $user->forceFill(['is_platform_admin' => true, 'email_verified_at' => now()])->save();
+
+        if (! $user->tenants()->where('tenant_id', $tenant->id)->exists()) {
+            $user->tenants()->attach($tenant->id, ['role' => 'super_admin', 'status' => 'active']);
+        }
     }
 }
